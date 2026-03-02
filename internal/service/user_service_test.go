@@ -6,9 +6,9 @@ import (
 
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
 
 type MockUserRepository struct {
 	mock.Mock
@@ -29,6 +29,7 @@ func TestGetUserService(t *testing.T) {
 		mockError   error
 		expectError bool
 		expectName  string
+		expectEmail string
 	}{
 		{
 			name:        "success - user found",
@@ -37,6 +38,7 @@ func TestGetUserService(t *testing.T) {
 			mockError:   nil,
 			expectError: false,
 			expectName:  "João",
+			expectEmail: "joao@gmail.com",
 		},
 		{
 			name:        "empty id - service validation error",
@@ -45,6 +47,7 @@ func TestGetUserService(t *testing.T) {
 			mockError:   nil,
 			expectError: true,
 			expectName:  "",
+			expectEmail: "",
 		},
 		{
 			name:        "repository return error - service validation error",
@@ -53,6 +56,7 @@ func TestGetUserService(t *testing.T) {
 			mockError:   errors.New("User does not exist"),
 			expectError: true,
 			expectName:  "",
+			expectEmail: "",
 		},
 	}
 
@@ -60,17 +64,27 @@ func TestGetUserService(t *testing.T) {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-				mockRepo := new(MockUserRepository)
+			mockRepo := new(MockUserRepository)
 
-				if tc.inputId != "" {
-					mockRepo.On("GetUserRepository", tc.inputId).Rerurn(tc.mockReturn, tc.mockError)
-				}
+			if tc.inputId != "" {
+				mockRepo.On("GetUserRepository", tc.inputId).Return(tc.mockReturn, tc.mockError)
 			}
 
-		)
+			svc := NewUserService(mockRepo)
+
+			user, err := svc.GetUserService(tc.inputId)
+
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectName, user.Name)
+				assert.Equal(t, tc.expectEmail, user.Email)
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
 
 	}
-
-
 
 }
